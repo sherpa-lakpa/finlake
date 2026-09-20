@@ -67,7 +67,7 @@ def _pandas_table_definition() -> TableDefinition:
 
 
 def test_execution_modes_requiring_spark_are_pyspark_and_sql_only():
-    assert EXECUTION_MODES_REQUIRING_SPARK == {ExecutionMode.PYSPARK, ExecutionMode.SQL}
+    assert EXECUTION_MODES_REQUIRING_SPARK == {ExecutionMode.PYSPARK}
 
 
 def test_base_pyspark_processor_requires_a_session():

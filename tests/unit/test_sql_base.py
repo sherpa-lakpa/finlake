@@ -44,59 +44,79 @@ def sql_processor_module(tmp_path: Path, monkeypatch):
 
 
 def test_read_registers_one_temp_view_per_input_path(sql_processor_module):
-    spark = MagicMock()
+    sql_engine = MagicMock()
     processor = sql_processor_module.FakeSqlProcessor(
-        spark=spark, output_path="/mnt/gold/risk", returns="/mnt/gold/returns"
+        sql_engine=sql_engine, output_path="/mnt/gold/risk", returns="/mnt/gold/returns"
     )
 
     processor.read()
 
-    spark.read.format.assert_called_with("delta")
-    spark.read.format.return_value.load.assert_called_with("/mnt/gold/returns")
-    spark.read.format.return_value.load.return_value.createOrReplaceTempView.assert_called_with(
-        "returns"
+    sql_engine.register_view.assert_called_once_with(
+        "returns",
+        "/mnt/gold/returns",
     )
 
 
 def test_transform_executes_the_sql_file_contents(sql_processor_module):
-    spark = MagicMock()
+    sql_engine = MagicMock()
     processor = sql_processor_module.FakeSqlProcessor(
-        spark=spark, output_path="/mnt/gold/risk", returns="/mnt/gold/returns"
+        sql_engine=sql_engine,
+        output_path="/mnt/gold/risk",
+        returns="/mnt/gold/returns",
     )
 
     processor.transform(None)
 
-    spark.sql.assert_called_once_with("SELECT security_id, daily_return FROM returns")
+    sql_engine.run_query.assert_called_once_with(
+        "SELECT security_id, daily_return FROM returns"
+    )
 
 
 def test_write_saves_as_delta_with_overwrite_mode(sql_processor_module):
-    spark = MagicMock()
+    sql_engine = MagicMock()
     processor = sql_processor_module.FakeSqlProcessor(
-        spark=spark, output_path="/mnt/gold/risk", returns="/mnt/gold/returns"
+        sql_engine=sql_engine,
+        output_path="/mnt/gold/risk",
+        returns="/mnt/gold/returns",
     )
-    df = MagicMock()
+    result = MagicMock()
 
-    processor.write(df)
+    processor.write(result)
 
-    df.write.format.assert_called_once_with("delta")
-    df.write.format.return_value.mode.assert_called_once_with("overwrite")
-    df.write.format.return_value.mode.return_value.save.assert_called_once_with("/mnt/gold/risk")
+    sql_engine.write_result.assert_called_once_with(
+        result,
+        "/mnt/gold/risk",
+    )
 
 
 def test_full_run_lifecycle_reads_transforms_and_writes(sql_processor_module):
-    """End-to-end through BaseProcessor.run(): read -> transform -> validate -> write."""
-    spark = MagicMock()
-    resulting_df = spark.sql.return_value
+    """End-to-end through BaseProcessor.run(): read -> transform -> write."""
+    sql_engine = MagicMock()
+    resulting_data = MagicMock()
+    sql_engine.run_query.return_value = resulting_data
+
     processor = sql_processor_module.FakeSqlProcessor(
-        spark=spark, output_path="/mnt/gold/risk", returns="/mnt/gold/returns"
+        sql_engine=sql_engine,
+        output_path="/mnt/gold/risk",
+        returns="/mnt/gold/returns",
     )
 
     result = processor.run()
 
-    assert result is resulting_df
-    resulting_df.write.format.assert_called_once_with("delta")
+    assert result is resulting_data
+    sql_engine.register_view.assert_called_once_with(
+        "returns",
+        "/mnt/gold/returns",
+    )
+    sql_engine.run_query.assert_called_once_with(
+        "SELECT security_id, daily_return FROM returns"
+    )
+    sql_engine.write_result.assert_called_once_with(
+        resulting_data,
+        "/mnt/gold/risk",
+    )
 
 
 def test_requires_a_spark_session_like_any_pyspark_processor(sql_processor_module):
     with pytest.raises(ValueError):
-        sql_processor_module.FakeSqlProcessor(spark=None, output_path="x", returns="y")
+        sql_processor_module.FakeSqlProcessor(sql_engine=None, output_path="x", returns="y")

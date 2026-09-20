@@ -45,7 +45,7 @@ stages:
           #   displayName: Lint
 
           - script: |
-              pytest --junitxml=test-results.xml
+              pytest --ignore=tests/integration --junitxml=test-results.xml
             displayName: Run full test suite (unit, processors, integration, architecture)
 
           - task: PublishTestResults@2

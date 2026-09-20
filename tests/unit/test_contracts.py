@@ -21,6 +21,7 @@ def test_valid_dataset_passes():
             "security_id": ["AAA", "BBB"],
             "ticker": ["AAA", "BBB"],
             "asset_class": ["EQUITY", "EQUITY"],
+            "exchange": ["NASDAQ", "NASDAQ"],
         }
     )
     validate_dataset_contract(df, SECURITY_MASTER_CONTRACT)  # should not raise
