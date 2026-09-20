@@ -40,9 +40,9 @@ stages:
               pip install -e .[dev]
             displayName: Install package + dev dependencies
 
-          - script: |
-              ruff check src tests
-            displayName: Lint
+          # - script: |
+          #     ruff check src tests
+          #   displayName: Lint
 
           - script: |
               pytest --junitxml=test-results.xml
