@@ -38,8 +38,6 @@ targets:
   dev:
     mode: development
     default: true
-    workspace:
-      host: ${var.databricks_host}
     variables:
       environment: dev
 
@@ -49,15 +47,11 @@ targets:
     # "staging" if your org prefers that term -- it's just a target name and
     # a matching configs/environments/<name>.yaml file, nothing structural.
     mode: production
-    workspace:
-      host: ${var.databricks_host}
     variables:
       environment: test
 
   prod:
     mode: production
-    workspace:
-      host: ${var.databricks_host}
     variables:
       environment: prod
     run_as:
