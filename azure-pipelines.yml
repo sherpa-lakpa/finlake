@@ -39,6 +39,10 @@ stages:
           - script: |
               pip install -e ".[dev,spark]"
             displayName: Install package + dev dependencies
+          - script: |
+              curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+              databricks version
+            displayName: Install Databricks CLI
 
           # - script: |
           #     ruff check src tests
