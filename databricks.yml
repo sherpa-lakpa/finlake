@@ -1,0 +1,64 @@
+# Databricks Asset Bundle root configuration.
+#
+# This file is hand-maintained (deployment shape: targets, clusters sizing
+# knobs, variables). The actual JOB DEFINITION -- one task per table -- is a
+# generated build artifact; see resources/tables_job.yml and
+# `python -m platform_name.deploy.bundle_generator`. Never hand-edit
+# resources/tables_job.yml: it is regenerated from metadata/ on every CI run
+# and is not committed to source control (see .gitignore).
+
+bundle:
+  name: platform_name
+
+include:
+  - resources/*.yml
+
+artifacts:
+  default:
+    type: whl
+    build: python -m build --wheel
+
+variables:
+  databricks_host:
+    description: Databricks workspace URL for this target.
+  environment:
+    description: >
+      Value passed to every generated task as --env, matching a file under
+      configs/environments/<environment>.yaml. Overridden per target below.
+  alert_email:
+    description: Distribution list notified on task failure.
+    default: data-platform-alerts@example.com
+  prod_service_principal:
+    description: >
+      Service principal application ID used to run production jobs (rather
+      than a human identity). Required for the prod target.
+    default: ""
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: ${var.databricks_host}
+    variables:
+      environment: dev
+
+  test:
+    # "test" doubles as the pre-production / staging environment: same
+    # promotion path as prod, but pointed at non-production data. Rename to
+    # "staging" if your org prefers that term -- it's just a target name and
+    # a matching configs/environments/<name>.yaml file, nothing structural.
+    mode: production
+    workspace:
+      host: ${var.databricks_host}
+    variables:
+      environment: test
+
+  prod:
+    mode: production
+    workspace:
+      host: ${var.databricks_host}
+    variables:
+      environment: prod
+    run_as:
+      service_principal_name: ${var.prod_service_principal}

@@ -1,0 +1,33 @@
+name: top_movers
+
+layer: gold
+
+execution:
+  mode: sql
+
+load:
+  strategy: full
+
+dependencies:
+  - gold.returns
+
+description: >
+  Securities ranked by daily return magnitude, computed entirely in SQL
+  (query.sql). Demonstrates execution.mode: sql -- runs against DuckDB
+  locally and against Spark/Databricks in test/prod, selected by each
+  environment's sql_backend config, with the exact same query text.
+
+processor:
+  module: platform_name.tables.gold.top_movers.processor
+  class: TopMoversProcessor
+
+paths:
+  returns:
+    file: returns.parquet
+    root: gold
+    parameter: returns
+
+  output:
+    file: top_movers.parquet
+
+processor_config: {}

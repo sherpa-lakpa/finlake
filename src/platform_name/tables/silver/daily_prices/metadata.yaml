@@ -1,0 +1,39 @@
+name: daily_prices
+
+layer: silver
+
+execution:
+  mode: pandas
+
+load:
+  strategy: upsert
+write_mode: merge
+
+dependencies:
+  - bronze.market_prices_historical
+  - silver.security_master
+
+description: >
+  Canonical daily security prices, enriched with security master
+  reference attributes.
+
+processor:
+  module: platform_name.tables.silver.daily_prices.processor
+  class: DailyPricesProcessor
+
+paths:
+  market_prices:
+    file: market_prices_historical.parquet
+    root: bronze
+    parameter: bronze_path
+
+  security_master:
+    file: security_master.parquet
+    root: silver
+    parameter: security_master_path
+
+  output:
+    file: daily_prices.parquet
+
+processor_config:
+  source: historical

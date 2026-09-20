@@ -1,0 +1,48 @@
+name: market_prices_daily
+
+layer: bronze
+
+execution:
+  mode: pandas
+
+load:
+  strategy: incremental
+write_mode: overwrite
+# ^ Logically incremental (only new trade dates are fetched from the API
+# each run, per symbol, resuming from wherever this table's own output
+# already reached), but physically implemented as a full overwrite of the
+# accumulated table -- Parquet on local disk has no native append the way
+# Delta's mode("append")/MERGE would in production. See processor.py's
+# write() docstring.
+
+dependencies: []
+# No table dependencies: the symbol universe comes from processor_config
+# below, not from silver.security_master -- a bronze table depending on a
+# silver one would violate medallion layer ordering (see
+# DependencyGraph._LAYER_ORDER). Keeping this list explicit and
+# metadata-driven, rather than reading it from security_master, also means
+# this table can run standalone, before the historical backfill has ever
+# completed.
+
+description: >
+  Ongoing daily price ingestion via the yfinance API, resuming per-symbol
+  from wherever this table's own output last left off (or since_default
+  for a symbol seen for the first time -- set to match the historical
+  dump's coverage cutoff). Fills the gap between a static historical
+  backfill and "today".
+
+processor:
+  module: platform_name.tables.bronze.market_prices_daily.processor
+  class: MarketPricesDailyProcessor
+
+paths:
+  output:
+    file: market_prices_daily.parquet
+
+processor_config:
+  symbols:
+    - AAPL
+    - MSFT
+    - AMD
+  since_default: "2020-07-01"
+  source: yfinance_daily

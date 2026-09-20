@@ -1,0 +1,14 @@
+.git
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+*.egg-info
+build
+dist
+.venv
+data/bronze/*.parquet
+data/silver/*.parquet
+data/gold/*.parquet
+resources/*.yml
+.databricks

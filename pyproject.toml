@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "platform_name"
+version = "0.1.0"
+description = "Metadata-driven, layered (medallion) data platform framework"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+dependencies = [
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "pyarrow>=14.0",
+    "duckdb",
+    "yfinance",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.4",
+    "build>=1.0",
+]
+spark = [
+    # Optional: only needed to actually run pyspark/sql-mode tables when
+    # their environment's sql_backend is "spark" (see tables/pyspark_base.py,
+    # sql/spark_engine.py, storage/delta.py). Not required for the pandas
+    # example domain, DuckDB-backed local dev, or the default test suite --
+    # tests exercising this extra are individually skipped via
+    # pytest.importorskip("pyspark") when it isn't installed.
+    "pyspark>=3.5",
+    "delta-spark>=3.0",
+]
+duckdb = [
+    # Optional: only needed locally, for environments whose sql_backend is
+    # "duckdb" (see sql/duckdb_engine.py). Deliberately kept separate from
+    # the `spark` extra above -- DuckDB is an embedded, zero-JVM engine,
+    # the whole point of offering it as the faster local dev path for
+    # execution.mode: sql tables.
+    "duckdb>=0.10",
+]
+ingestion = [
+    # Optional: only needed to run bronze.market_prices_daily's real API
+    # call (tables/bronze/market_prices_daily/processor.py). Not required
+    # to test that table's resume-point/merge logic, which is exercised
+    # via an injected fake fetcher instead -- see
+    # tests/processors/test_market_prices_daily_processor.py.
+    "yfinance>=0.2.40",
+]
+
+[project.scripts]
+# Registered so the built wheel exposes these as console scripts -- this is
+# what Databricks `python_wheel_task.entry_point` resolves against. See
+# platform_name/deploy/bundle_generator.py (ENTRY_POINT_NAME) and
+# platform_name/entrypoints/run_single_table.py.
+run_single_table = "platform_name.entrypoints.run_single_table:main"
+generate_databricks_bundle = "platform_name.deploy.bundle_generator:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# Metadata now lives colocated with its processor under
+# src/platform_name/tables/<layer>/<table>/metadata.yaml. Without this,
+# `pip install` / building the wheel would silently drop every metadata.yaml
+# file, since setuptools only packages *.py files by default -- the
+# TableRegistry would find zero tables once installed anywhere other than
+# an editable checkout (e.g. on a Databricks cluster). This is what lets
+# metadata ship inside the wheel automatically, with no separate deployment
+# step for it.
+"platform_name" = ["tables/**/metadata.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

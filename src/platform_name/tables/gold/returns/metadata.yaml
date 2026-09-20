@@ -1,0 +1,30 @@
+name: returns
+
+layer: gold
+
+execution:
+  mode: pandas
+
+load:
+  strategy: full
+
+dependencies:
+  - silver.daily_prices
+
+description: >
+  Daily simple returns per security, derived from canonical daily prices.
+
+processor:
+  module: platform_name.tables.gold.returns.processor
+  class: GoldReturnsProcessor
+
+paths:
+  input:
+    file: daily_prices.parquet
+    root: silver
+    parameter: prices_path
+
+  output:
+    file: returns.parquet
+
+processor_config: {}

@@ -1,0 +1,32 @@
+name: exchange_listings
+
+layer: bronze
+
+execution:
+  mode: pandas
+
+load:
+  strategy: full
+
+dependencies: []
+
+description: >
+  Ticker-to-exchange reference data, read from the plain-text listing
+  files (NASDAQ.txt, NYSE.txt, AMEX.txt) that ship alongside the
+  historical price dump. Real reference data enriching security_master,
+  replacing a hardcoded asset-class placeholder.
+
+processor:
+  module: platform_name.tables.bronze.exchange_listings.processor
+  class: ExchangeListingsProcessor
+
+paths:
+  input:
+    directory: historical
+    root: landing
+    parameter: source_path
+
+  output:
+    file: exchange_listings.parquet
+
+processor_config: {}

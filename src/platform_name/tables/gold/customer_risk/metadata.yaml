@@ -1,0 +1,33 @@
+name: customer_risk
+
+layer: gold
+
+execution:
+  mode: pyspark
+
+load:
+  strategy: full
+
+dependencies:
+  - gold.returns
+
+description: >
+  Per-security risk score (mean absolute daily return), computed with
+  PySpark's DataFrame API. Demonstrates execution.mode: pyspark -- runs
+  locally against a local[*] SparkSession and in test/prod against a
+  Databricks cluster session, unmodified.
+
+processor:
+  module: platform_name.tables.gold.customer_risk.processor
+  class: CustomerRiskProcessor
+
+paths:
+  input:
+    file: returns.parquet
+    root: gold
+    parameter: returns_path
+
+  output:
+    file: customer_risk.parquet
+
+processor_config: {}

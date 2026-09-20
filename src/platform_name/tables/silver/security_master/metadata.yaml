@@ -1,0 +1,31 @@
+name: security_master
+
+layer: silver
+
+execution:
+  mode: pandas
+
+load:
+  strategy: full
+
+dependencies:
+  - bronze.market_prices_historical
+
+description: >
+  Canonical list of securities (tickers) derived from observed bronze
+  market price records.
+
+processor:
+  module: platform_name.tables.silver.security_master.processor
+  class: SecurityMasterProcessor
+
+paths:
+  input:
+    file: market_prices_historical.parquet
+    root: bronze
+    parameter: input_path
+
+  output:
+    file: security_master.parquet
+
+processor_config: {}

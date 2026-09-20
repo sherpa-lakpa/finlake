@@ -1,0 +1,167 @@
+# CI/CD pipeline: test -> validate -> generate bundle -> deploy.
+#
+# Two triggers:
+#   - Pull requests: build + test + validate only, nothing is deployed.
+#   - Merges to main: additionally deploy to `dev` automatically, then
+#     `test` and `prod` behind manual approval gates (configured as
+#     Environments in Azure DevOps -> Pipelines -> Environments, with
+#     approvals/checks attached to the `test` and `prod` environments).
+#
+# Secrets expected as pipeline variables / variable group (never hardcode):
+#   DATABRICKS_HOST_DEV / DATABRICKS_HOST_TEST / DATABRICKS_HOST_PROD
+#   DATABRICKS_TOKEN or a service-principal based auth (preferred for prod --
+#   see https://docs.databricks.com/dev-tools/auth for current guidance).
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  PYTHON_VERSION: "3.11"
+
+stages:
+  - stage: BuildAndTest
+    displayName: Build, test, validate
+    jobs:
+      - job: Test
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(PYTHON_VERSION)
+
+          - script: |
+              pip install -e .[dev]
+            displayName: Install package + dev dependencies
+
+          - script: |
+              ruff check src tests
+            displayName: Lint
+
+          - script: |
+              pytest --junitxml=test-results.xml
+            displayName: Run full test suite (unit, processors, integration, architecture)
+
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: test-results.xml
+
+          - script: |
+              # Fails fast on any metadata / dependency-graph / processor
+              # problem, without needing real data files to exist. This is
+              # the same check the architecture test suite runs, kept here
+              # too so it's visible as its own CI step.
+              python -c "
+              from platform_name.common.config import Config
+              from platform_name.engine.table_registry import TableRegistry
+              from platform_name.engine.validation import ArchitectureValidator
+              config = Config('configs/environments/dev.yaml')
+              registry = TableRegistry('src/platform_name/tables').load()
+              report = ArchitectureValidator(registry, config).validate()
+              assert report.is_valid, report.errors
+              print(f'Architecture validation passed for {len(registry)} tables.')
+              "
+            displayName: Architecture pre-flight validation
+
+          - script: |
+              python -m platform_name.deploy.bundle_generator \
+                --output resources/tables_job.yml
+            displayName: Generate Databricks job definition from metadata
+
+          - script: |
+              # Requires the Databricks CLI (bundle support) on the agent --
+              # see https://docs.databricks.com/dev-tools/cli/install.html
+              # for the current install command for your agent image.
+              databricks bundle validate -t dev
+            displayName: Validate generated bundle
+            env:
+              DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
+              DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV)
+
+          - publish: resources/tables_job.yml
+            artifact: generated-bundle-resource
+
+  - stage: DeployDev
+    displayName: Deploy to dev
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: Deploy
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: UsePythonVersion@0
+                  inputs:
+                    versionSpec: $(PYTHON_VERSION)
+                - script: pip install -e .[dev]
+                  displayName: Install package
+                - script: |
+                    python -m platform_name.deploy.bundle_generator --output resources/tables_job.yml
+                    databricks bundle deploy -t dev
+                  displayName: Regenerate + deploy bundle (dev)
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
+                    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV)
+                - script: |
+                    # Smoke test: run one leaf table end to end against dev
+                    # data before promoting further.
+                    databricks bundle run platform_name_tables -t dev \
+                      --params environment=dev
+                  displayName: Smoke-run the pipeline in dev
+
+  - stage: DeployTest
+    displayName: Deploy to test (staging)
+    dependsOn: DeployDev
+    condition: succeeded()
+    jobs:
+      - deployment: Deploy
+        environment: test  # attach an approval check to this Environment in the UI
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: UsePythonVersion@0
+                  inputs:
+                    versionSpec: $(PYTHON_VERSION)
+                - script: pip install -e .[dev]
+                  displayName: Install package
+                - script: |
+                    python -m platform_name.deploy.bundle_generator --output resources/tables_job.yml
+                    databricks bundle deploy -t test
+                  displayName: Regenerate + deploy bundle (test)
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_TEST)
+                    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_TEST)
+
+  - stage: DeployProd
+    displayName: Deploy to production
+    dependsOn: DeployTest
+    condition: succeeded()
+    jobs:
+      - deployment: Deploy
+        environment: prod  # attach a required-approval check to this Environment
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: UsePythonVersion@0
+                  inputs:
+                    versionSpec: $(PYTHON_VERSION)
+                - script: pip install -e .[dev]
+                  displayName: Install package
+                - script: |
+                    python -m platform_name.deploy.bundle_generator --output resources/tables_job.yml
+                    databricks bundle deploy -t prod
+                  displayName: Regenerate + deploy bundle (prod)
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_PROD)
+                    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_PROD)

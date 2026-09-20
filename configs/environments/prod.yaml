@@ -1,0 +1,18 @@
+environment: prod
+
+# In production these would point at ADLS Gen2 / Unity Catalog locations, e.g.:
+#   bronze: abfss://bronze@myaccount.dfs.core.windows.net/tables
+# Kept as local paths here so the repository remains runnable out of the box.
+paths:
+  landing: data/landing
+  bronze: data/bronze
+  silver: data/silver
+  gold: data/gold
+
+market_data:
+  source: historical
+
+# execution.mode: sql AND execution.mode: pyspark tables both require a
+# real Spark session here -- always the Databricks cluster's session in
+# production (never local[*]); see entrypoints/run_single_table.py.
+sql_backend: spark

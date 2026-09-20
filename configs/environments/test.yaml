@@ -1,0 +1,16 @@
+environment: test
+
+paths:
+  landing: data/landing
+  bronze: data/bronze
+  silver: data/silver
+  gold: data/gold
+
+market_data:
+  source: historical
+
+# execution.mode: sql AND execution.mode: pyspark tables both require a
+# real Spark session here -- see entrypoints/run_single_table.py, which
+# auto-attaches to the Databricks cluster's already-running session when
+# this environment's job actually runs on Databricks.
+sql_backend: spark

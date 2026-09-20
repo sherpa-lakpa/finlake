@@ -1,0 +1,34 @@
+name: market_prices_historical
+
+layer: bronze
+
+execution:
+  mode: pandas
+
+load:
+  strategy: full
+
+dependencies: []
+
+description: >
+  Bulk historical backfill from the per-symbol "AMEX, NYSE, and NASDAQ
+  stocks histories" dataset (full_history/<TICKER>.csv files). Re-run
+  whenever a fresh historical dump replaces the landing zone contents;
+  covers data up to wherever that dump's history ends -- see
+  bronze.market_prices_daily for the ongoing feed past that point.
+
+processor:
+  module: platform_name.tables.bronze.market_prices_historical.processor
+  class: MarketPricesHistoricalProcessor
+
+paths:
+  input:
+    directory: historical
+    root: landing
+    parameter: source_path
+
+  output:
+    file: market_prices_historical.parquet
+
+processor_config:
+  source: historical_dump
