@@ -37,7 +37,7 @@ stages:
               versionSpec: $(PYTHON_VERSION)
 
           - script: |
-              pip install -e .[dev]
+              pip install -e ".[dev,spark]"
             displayName: Install package + dev dependencies
 
           # - script: |
