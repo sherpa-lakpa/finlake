@@ -115,6 +115,7 @@ stages:
           runOnce:
             deploy:
               steps:
+                - checkout: self
                 - task: UsePythonVersion@0
                   inputs:
                     versionSpec: $(PYTHON_VERSION)
@@ -150,6 +151,7 @@ stages:
           runOnce:
             deploy:
               steps:
+                - checkout: self
                 - task: UsePythonVersion@0
                   inputs:
                     versionSpec: $(PYTHON_VERSION)
@@ -178,6 +180,7 @@ stages:
           runOnce:
             deploy:
               steps:
+                - checkout: self
                 - task: UsePythonVersion@0
                   inputs:
                     versionSpec: $(PYTHON_VERSION)
