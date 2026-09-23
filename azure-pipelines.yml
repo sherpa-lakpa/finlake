@@ -93,7 +93,8 @@ stages:
               # Requires the Databricks CLI (bundle support) on the agent --
               # see https://docs.databricks.com/dev-tools/cli/install.html
               # for the current install command for your agent image.
-              databricks bundle validate -t dev
+              databricks bundle validate -t dev \
+                --var="databricks_host=$(DATABRICKS_HOST_DEV)"
             displayName: Validate generated bundle
             env:
               DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
