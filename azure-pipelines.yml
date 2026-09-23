@@ -80,6 +80,14 @@ stages:
             displayName: Generate Databricks job definition from metadata
 
           - script: |
+              databricks current-user me
+            displayName: 'Test Databricks authentication'
+            env:
+              DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
+              DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID_DEV)
+              DATABRICKS_CLIENT_SECRET: $(DATABRICKS_CLIENT_SECRET_DEV)
+
+          - script: |
               # Requires the Databricks CLI (bundle support) on the agent --
               # see https://docs.databricks.com/dev-tools/cli/install.html
               # for the current install command for your agent image.
@@ -87,7 +95,8 @@ stages:
             displayName: Validate generated bundle
             env:
               DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
-              DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV)
+              DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID_DEV)
+              DATABRICKS_CLIENT_SECRET: $(DATABRICKS_CLIENT_SECRET_DEV)
 
           - publish: resources/tables_job.yml
             artifact: generated-bundle-resource
