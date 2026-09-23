@@ -118,8 +118,9 @@ stages:
                 - task: UsePythonVersion@0
                   inputs:
                     versionSpec: $(PYTHON_VERSION)
-                - script: pip install -e .[dev]
-                  displayName: Install package
+                - script: |
+                    pip install -e ".[dev,spark]"
+                  displayName: Install package + dev dependencies
                 - script: |
                     curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
                     databricks version
