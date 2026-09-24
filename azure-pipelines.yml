@@ -128,7 +128,8 @@ stages:
                   displayName: Install Databricks CLI
                 - script: |
                     python -m platform_name.deploy.bundle_generator --output resources/tables_job.yml
-                    databricks bundle deploy -t dev
+                    databricks bundle deploy -t dev \
+                      --var="databricks_host=$(DATABRICKS_HOST_DEV)"
                   displayName: Regenerate + deploy bundle (dev)
                   env:
                     DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
@@ -164,7 +165,8 @@ stages:
                   displayName: Install Databricks CLI
                 - script: |
                     python -m platform_name.deploy.bundle_generator --output resources/tables_job.yml
-                    databricks bundle deploy -t test
+                    databricks bundle deploy -t test \
+                      --var="databricks_host=$(DATABRICKS_HOST_TEST)"
                   displayName: Regenerate + deploy bundle (test)
                   env:
                     DATABRICKS_HOST: $(DATABRICKS_HOST_TEST)
@@ -194,7 +196,8 @@ stages:
                   displayName: Install Databricks CLI
                 - script: |
                     python -m platform_name.deploy.bundle_generator --output resources/tables_job.yml
-                    databricks bundle deploy -t prod
+                    databricks bundle deploy -t prod \
+                      --var="databricks_host=$(DATABRICKS_HOST_PROD)"
                   displayName: Regenerate + deploy bundle (prod)
                   env:
                     DATABRICKS_HOST: $(DATABRICKS_HOST_PROD)
