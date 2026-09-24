@@ -139,8 +139,13 @@ stages:
                     # Smoke test: run one leaf table end to end against dev
                     # data before promoting further.
                     databricks bundle run platform_name_tables -t dev \
-                      --params environment=dev
+                      --params environment=dev \
+                      --var="databricks_host=$(DATABRICKS_HOST_DEV)"
                   displayName: Smoke-run the pipeline in dev
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID_DEV)
+                    DATABRICKS_CLIENT_SECRET: $(DATABRICKS_CLIENT_SECRET_DEV)
 
   - stage: DeployTest
     displayName: Deploy to test (staging)
