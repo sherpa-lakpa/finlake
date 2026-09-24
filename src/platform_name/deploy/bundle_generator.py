@@ -117,7 +117,7 @@ def build_job_resource(registry: TableRegistry) -> dict[str, Any]:
                                 # Kept here (not per-table) since compute sizing
                                 # is a deployment concern, not a table concern.
                                 "spark_version": "14.3.x-scala2.12",
-                                "node_type_id": "Standard_D4as_v5",
+                                "node_type_id": "Standard_D4s_v3",
                                 # "num_workers": 2,
 
                                 "num_workers": 0,
