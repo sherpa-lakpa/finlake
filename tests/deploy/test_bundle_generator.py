@@ -103,4 +103,4 @@ def test_job_resource_has_no_business_specific_top_level_structure(registry):
     vary per table -- only the generated `tasks` list should."""
     resource = build_job_resource(registry)
     job = resource["resources"]["jobs"][JOB_RESOURCE_NAME]
-    assert set(job) == {"name", "parameters", "job_clusters", "tasks", "email_notifications"}
+    assert set(job) == {"name", "parameters", "environments", "tasks", "email_notifications"}
