@@ -30,11 +30,13 @@ from platform_name.engine.table_registry import TableRegistry
 from platform_name.observability.result_sink import ResultSink, StdoutResultSink
 from platform_name.sql.factory import build_sql_engine
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+# _REPO_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 # Metadata ships inside the installed package (see pyproject.toml
 # package-data), so this resolves correctly both from a repo checkout and
 # from a wheel installed on a Databricks cluster.
-DEFAULT_METADATA_ROOT = Path(__file__).resolve().parents[1] / "tables"
+# DEFAULT_METADATA_ROOT = Path(__file__).resolve().parents[1] / "tables"
+DEFAULT_METADATA_ROOT = _REPO_ROOT / "tables"
 DEFAULT_CONFIG_ROOT = _REPO_ROOT / "configs" / "environments"
 
 

@@ -70,7 +70,10 @@ where = ["src"]
 # an editable checkout (e.g. on a Databricks cluster). This is what lets
 # metadata ship inside the wheel automatically, with no separate deployment
 # step for it.
-"platform_name" = ["tables/**/metadata.yaml"]
+"platform_name" = [
+    "tables/**/metadata.yaml", 
+    "configs/environments/*.yaml",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
