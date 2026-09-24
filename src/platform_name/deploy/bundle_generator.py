@@ -48,6 +48,8 @@ JOB_RESOURCE_NAME = "platform_name_tables"
 SERVERLESS_ENVIRONMENT_KEY = "default_python"
 SERVERLESS_ENVIRONMENT_VERSION = "5"
 
+# Python wheel installed into the shared serverless environment.
+SERVERLESS_WHEEL = "../dist/*.whl"
 
 def _task_key(fully_qualified_name: str) -> str:
     """Convert a table name into a valid Databricks task key.
@@ -101,14 +103,6 @@ def build_task_definitions(
                     "{{job.parameters.environment}}",
                 ],
             },
-
-            # The wheel is the application artifact produced by the bundle.
-            # Keep this as a task library dependency.
-            "libraries": [
-                {
-                    "whl": "../dist/*.whl",
-                }
-            ],
         }
 
         if definition.dependencies:
@@ -155,6 +149,9 @@ def build_job_resource(
                             "environment_key": SERVERLESS_ENVIRONMENT_KEY,
                             "spec": {
                                 "environment_version": SERVERLESS_ENVIRONMENT_VERSION,
+                                "dependencies": [
+                                    SERVERLESS_WHEEL,
+                                ],
                             },
                         }
                     ],
