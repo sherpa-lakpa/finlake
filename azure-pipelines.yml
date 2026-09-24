@@ -132,7 +132,8 @@ stages:
                   displayName: Regenerate + deploy bundle (dev)
                   env:
                     DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
-                    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID_DEV)
+                    DATABRICKS_CLIENT_SECRET: $(DATABRICKS_CLIENT_SECRET_DEV)
                 - script: |
                     # Smoke test: run one leaf table end to end against dev
                     # data before promoting further.
@@ -167,7 +168,8 @@ stages:
                   displayName: Regenerate + deploy bundle (test)
                   env:
                     DATABRICKS_HOST: $(DATABRICKS_HOST_TEST)
-                    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_TEST)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID_TEST)
+                    DATABRICKS_CLIENT_SECRET: $(DATABRICKS_CLIENT_SECRET_TEST)
 
   - stage: DeployProd
     displayName: Deploy to production
@@ -196,4 +198,5 @@ stages:
                   displayName: Regenerate + deploy bundle (prod)
                   env:
                     DATABRICKS_HOST: $(DATABRICKS_HOST_PROD)
-                    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_PROD)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID_PROD)
+                    DATABRICKS_CLIENT_SECRET: $(DATABRICKS_CLIENT_SECRET_PROD)
