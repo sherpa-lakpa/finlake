@@ -36,7 +36,7 @@ def main() -> None:
     # session for environments where sql_backend: spark is selected.
     spark = SparkSession.builder.master("local[*]").appName("local-dev-pipeline").getOrCreate()
 
-    config = Config("configs/environments/dev.yaml")
+    config = Config.for_environment("dev")
     sql_engine = build_sql_engine(config, spark=spark)
     context = ExecutionContext(config=config, spark=spark, sql_engine=sql_engine)
     runner = TableRunner()

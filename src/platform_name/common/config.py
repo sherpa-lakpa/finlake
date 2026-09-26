@@ -21,6 +21,29 @@ from platform_name.common.exceptions import ConfigurationError
 
 _REQUIRED_PATH_ROOTS = ("landing", "bronze", "silver", "gold")
 
+# Environment configs live colocated inside the package itself --
+# src/platform_name/configs/environments/<name>.yaml -- for exactly the
+# same reason table metadata does (see engine/table_registry.py): a path
+# outside src/platform_name/ doesn't ship with the built wheel, so it would
+# silently be missing once installed anywhere other than an editable
+# checkout (e.g. on a Databricks cluster). Resolving this via __file__
+# means it works identically from an editable install and an installed
+# wheel, regardless of the process's current working directory.
+PACKAGE_CONFIG_ROOT = Path(__file__).resolve().parents[1] / "configs" / "environments"
+
+
+def default_environment_config_path(environment: str) -> Path:
+    """The packaged config path for a named environment (dev/test/prod).
+
+    This is the single place that knows where environment configs live.
+    Prefer this (or :meth:`Config.for_environment`) over hardcoding
+    ``"configs/environments/<name>.yaml"`` anywhere else -- a hardcoded
+    relative path only resolves correctly when the current working
+    directory happens to be the repo root, which is not a safe assumption
+    for a script invoked as a Databricks task or from an arbitrary CI step.
+    """
+    return PACKAGE_CONFIG_ROOT / f"{environment}.yaml"
+
 
 class Config:
     """Loads and validates a single environment configuration file."""
@@ -32,6 +55,14 @@ class Config:
 
         self.environment: str = self._raw["environment"]
         self._paths: dict[str, str] = dict(self._raw["paths"])
+
+    @classmethod
+    def for_environment(cls, environment: str) -> "Config":
+        """Loads the packaged config for a named environment (dev/test/prod)
+        by name, e.g. ``Config.for_environment("dev")``, instead of a
+        hardcoded path. See :func:`default_environment_config_path`.
+        """
+        return cls(default_environment_config_path(environment))
 
     @staticmethod
     def _load(path: Path) -> dict[str, Any]:

@@ -61,7 +61,8 @@ different entry point per table.
 
 The production entry point. Given `--table gold.returns --env prod`, it:
 
-1. Loads `configs/environments/prod.yaml`.
+1. Loads `src/platform_name/configs/environments/prod.yaml` via
+   `Config.for_environment("prod")`.
 2. Loads the metadata registry and looks up `gold.returns`.
 3. Builds the processor via the same `ProcessorFactory` used everywhere
    else in the framework.
@@ -119,7 +120,7 @@ repository uses **Asset Bundles** by default:
   generates a deployment artifact, the same way metadata already generates
   `TableDefinition` objects.
 - `databricks.yml`'s `targets:` block maps directly onto this repo's
-  existing `configs/environments/{dev,test,prod}.yaml` split.
+  existing `src/platform_name/configs/environments/{dev,test,prod}.yaml` split.
 - It's git-native and has a fast `validate` → `deploy` loop, which matters
   when "add one table" should be a small, fast change to ship.
 

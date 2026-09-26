@@ -24,7 +24,7 @@ variables:
   environment:
     description: >
       Value passed to every generated task as --env, matching a file under
-      configs/environments/<environment>.yaml. Overridden per target below.
+      src/platform_name/configs/environments/<environment>.yaml. Overridden per target below.
   alert_email:
     description: Distribution list notified on task failure.
     default: data-platform-alerts@example.com
@@ -45,7 +45,7 @@ targets:
     # "test" doubles as the pre-production / staging environment: same
     # promotion path as prod, but pointed at non-production data. Rename to
     # "staging" if your org prefers that term -- it's just a target name and
-    # a matching configs/environments/<name>.yaml file, nothing structural.
+    # a matching src/platform_name/configs/environments/<name>.yaml file, nothing structural.
     mode: production
     variables:
       environment: test

@@ -68,7 +68,7 @@ stages:
               from platform_name.common.config import Config
               from platform_name.engine.table_registry import TableRegistry
               from platform_name.engine.validation import ArchitectureValidator
-              config = Config('configs/environments/dev.yaml')
+              config = Config.for_environment('dev')
               registry = TableRegistry('src/platform_name/tables').load()
               report = ArchitectureValidator(registry, config).validate()
               assert report.is_valid, report.errors

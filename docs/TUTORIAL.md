@@ -114,7 +114,7 @@ inferring one from the other.
 ## 3. A guided tour of the repository
 
 ```
-configs/environments/{dev,test,prod}.yaml   # WHERE data lives per environment
+src/platform_name/configs/environments/{dev,test,prod}.yaml  # WHERE data lives per environment
 src/platform_name/
     common/
         config.py          # loads + validates one environment YAML
@@ -179,7 +179,7 @@ from platform_name.common.config import Config
 from platform_name.engine.models import ExecutionContext
 from platform_name.engine.runner import TableRunner
 
-config = Config("configs/environments/dev.yaml")
+config = Config.for_environment("dev")
 context = ExecutionContext(config=config)
 runner = TableRunner()
 
@@ -256,7 +256,9 @@ objects generically.
 
 ### `common/config.py` — `Config`
 
-Loads a single environment YAML (`configs/environments/dev.yaml`, etc.),
+Loads a single environment YAML, colocated inside the package at
+`src/platform_name/configs/environments/dev.yaml` etc. (load by name via
+`Config.for_environment("dev")`, not a hardcoded path),
 validates it has an `environment` key and a `paths` mapping with all four
 layer roots (`landing`, `bronze`, `silver`, `gold`), and exposes:
 
@@ -658,7 +660,7 @@ Nothing in this repository is Databricks-specific, and that's deliberate:
 - `ExecutionContext.spark` is already a first-class field — `None` for
   local Pandas runs, a real `SparkSession` when running inside a Databricks
   job.
-- A `configs/environments/prod.yaml` needs only its `paths:` section
+- A `src/platform_name/configs/environments/prod.yaml` needs only its `paths:` section
   changed to `abfss://...` URLs — the metadata files themselves don't
   change between environments.
 
@@ -742,7 +744,7 @@ from platform_name.common.config import Config
 from platform_name.engine.models import ExecutionContext
 from platform_name.engine.runner import TableRunner
 
-config = Config("configs/environments/dev.yaml")
+config = Config.for_environment("dev")
 context = ExecutionContext(config=config)
 runner = TableRunner()
 result = runner.run(table_name="gold.returns", context=context)
@@ -755,7 +757,7 @@ from platform_name.common.config import Config
 from platform_name.engine.table_registry import TableRegistry
 from platform_name.engine.validation import ArchitectureValidator
 
-config = Config("configs/environments/dev.yaml")
+config = Config.for_environment("dev")
 registry = TableRegistry("src/platform_name/tables").load()  # or omit the root; TableRunner defaults here too
 report = ArchitectureValidator(registry, config).validate()
 assert report.is_valid, report.errors

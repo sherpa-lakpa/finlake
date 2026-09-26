@@ -22,7 +22,7 @@ import sys
 import uuid
 from pathlib import Path
 
-from platform_name.common.config import Config
+from platform_name.common.config import Config, PACKAGE_CONFIG_ROOT, default_environment_config_path
 from platform_name.common.exceptions import PlatformError
 from platform_name.engine.models import ExecutionContext, ExecutionResult
 from platform_name.engine.processor_factory import EXECUTION_MODES_REQUIRING_SQL_ENGINE, ProcessorFactory
@@ -30,14 +30,16 @@ from platform_name.engine.table_registry import TableRegistry
 from platform_name.observability.result_sink import ResultSink, StdoutResultSink
 from platform_name.sql.factory import build_sql_engine
 
-# _REPO_ROOT = Path(__file__).resolve().parents[3]
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-# Metadata ships inside the installed package (see pyproject.toml
-# package-data), so this resolves correctly both from a repo checkout and
-# from a wheel installed on a Databricks cluster.
-# DEFAULT_METADATA_ROOT = Path(__file__).resolve().parents[1] / "tables"
-DEFAULT_METADATA_ROOT = _REPO_ROOT / "tables"
-DEFAULT_CONFIG_ROOT = _REPO_ROOT / "configs" / "environments"
+# Metadata and configs both ship inside the installed package (see
+# pyproject.toml package-data), so both of these resolve correctly whether
+# running from an editable checkout or an installed wheel on a Databricks
+# cluster -- see common/config.py's default_environment_config_path for the
+# same reasoning applied to configs specifically.
+DEFAULT_METADATA_ROOT = Path(__file__).resolve().parents[1] / "tables"
+# Kept as a module-level constant (rather than only using
+# default_environment_config_path inline) since tests reference it
+# directly -- but it's derived from the same single source of truth.
+DEFAULT_CONFIG_ROOT = PACKAGE_CONFIG_ROOT
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -99,7 +101,9 @@ def run(
     (after recording the failed result) so the calling process -- and
     therefore the Databricks task -- exits non-zero and shows red.
     """
-    resolved_config_path = Path(config_path) if config_path else DEFAULT_CONFIG_ROOT / f"{environment}.yaml"
+    resolved_config_path = (
+        Path(config_path) if config_path else default_environment_config_path(environment)
+    )
     config = Config(resolved_config_path)
     registry = TableRegistry(metadata_root).load()
     definition = registry.get(table_name)

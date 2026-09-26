@@ -38,10 +38,10 @@ tables need a `sql_engine` — **which backend that is comes from
 environment configuration, not the table**:
 
 ```yaml
-# configs/environments/dev.yaml
+# src/platform_name/configs/environments/dev.yaml
 sql_backend: duckdb    # embedded, no cluster, fastest local iteration
 
-# configs/environments/test.yaml and prod.yaml
+# src/platform_name/configs/environments/test.yaml and prod.yaml
 sql_backend: spark      # Databricks cluster session in production
 ```
 
@@ -211,7 +211,8 @@ and `gold.top_movers` run completely unmodified. A Databricks
 that already has Spark initialized, so
 `SparkSession.builder.getOrCreate()` attaches to *that* existing session
 rather than starting a new one — same code, a real cluster behind it
-instead of `local[*]`. `configs/environments/test.yaml`/`prod.yaml` both
+instead of `local[*]`. `configs/environments/test.yaml`/`prod.yaml` (inside
+the package) both
 set `sql_backend: spark`, so `gold.top_movers` runs on real Databricks SQL
 (via Spark) in those environments, never DuckDB — DuckDB is a local-only
 convenience, deliberately not available as a `test`/`prod` option.

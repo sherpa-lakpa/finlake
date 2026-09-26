@@ -38,7 +38,7 @@ from platform_name.common.config import Config
 from platform_name.engine.models import ExecutionContext
 from platform_name.engine.runner import TableRunner
 
-config = Config("configs/environments/dev.yaml")
+config = Config.for_environment("dev")
 context = ExecutionContext(config=config)
 runner = TableRunner()
 
@@ -89,7 +89,7 @@ The most important rule in the codebase:
 ## 2. Repository structure
 
 ```
-configs/environments/{dev,test,prod}.yaml   # environment-specific path roots
+src/platform_name/configs/environments/{dev,test,prod}.yaml  # environment-specific path roots
 src/platform_name/
     common/            # Config, exceptions
     engine/            # enums, TableDefinition, registry, loader, factory,
@@ -193,10 +193,22 @@ violations (a table may not depend on a *later* medallion layer).
 
 ## 6. Configuration & environments
 
-`Config` loads one environment YAML (`configs/environments/{dev,test,prod}.yaml`)
-exposing `landing`/`bronze`/`silver`/`gold` root paths plus arbitrary config.
-The same table metadata runs unchanged across environments — only the path
-roots differ, e.g. local `data/bronze` in dev vs. `abfss://...` in prod.
+`Config` loads one environment YAML, colocated inside the package at
+`src/platform_name/configs/environments/{dev,test,prod}.yaml` — for the
+same packaging reason table metadata lives inside the package too (see
+section 3): a path outside `src/platform_name/` doesn't ship with the
+built wheel, so it would silently be missing once installed anywhere
+other than an editable checkout (e.g. on a Databricks cluster). Load one
+by name rather than hardcoding its path:
+
+```python
+config = Config.for_environment("dev")   # not Config("configs/environments/dev.yaml")
+```
+
+`Config` exposes `landing`/`bronze`/`silver`/`gold` root paths plus
+arbitrary config. The same table metadata runs unchanged across
+environments — only the path roots differ, e.g. local `data/bronze` in
+dev vs. `abfss://...` in prod.
 
 ## 7. Data quality
 
@@ -232,7 +244,8 @@ are not coupled to Pandas or the local filesystem:
   [`docs/PYSPARK_AND_SQL_GUIDE.md`](docs/PYSPARK_AND_SQL_GUIDE.md) for how
   to write and run a real PySpark or SQL table, locally and in production.
 * `ExecutionContext.spark` already carries an optional `SparkSession`.
-* A production `configs/environments/prod.yaml` points path roots at ADLS
+* A production `configs/environments/prod.yaml` (inside the package -- see
+  below) points path roots at ADLS
   Gen2 / Unity Catalog locations instead of local `data/` directories —
   no metadata changes required.
 
