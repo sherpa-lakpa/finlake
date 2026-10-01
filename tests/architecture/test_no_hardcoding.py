@@ -14,6 +14,7 @@ import inspect
 import textwrap
 from pathlib import Path
 
+from platform_name.common import config as config_module
 from platform_name.common.config import Config
 from platform_name.engine import (
     dependency_graph,
@@ -44,6 +45,7 @@ _GENERIC_ENGINE_MODULES = [
     metadata_loader,
     runner,
     validation,
+    config_module,
 ]
 
 # tables/base.py, pyspark_base.py, sql_base.py, storage/delta.py,

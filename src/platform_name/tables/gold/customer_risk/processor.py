@@ -17,6 +17,13 @@ from pyspark.sql import DataFrame, functions as F
 from platform_name.storage.spark_parquet import SparkParquetStorage
 from platform_name.tables.pyspark_base import BasePySparkProcessor
 
+# See contract.py in this same directory for this table's DatasetContract.
+# Not wired into validate() below: quality/framework.py's
+# validate_dataset_contract is pandas-specific (pd.api.types.* calls) and
+# would fail as-is against a PySpark DataFrame. The contract still
+# documents the expected shape and is ready for a Spark-native validator
+# to consume once one exists -- see docs/PYSPARK_AND_SQL_GUIDE.md.
+
 
 class CustomerRiskProcessor(BasePySparkProcessor):
     """Risk score per security: mean absolute daily return."""

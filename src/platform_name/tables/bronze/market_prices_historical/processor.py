@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from platform_name.contracts.definitions import MARKET_PRICES_CONTRACT
+from platform_name.tables.bronze.market_prices_historical.contract import CONTRACT
 from platform_name.quality.framework import validate_dataset_contract
 from platform_name.storage.local import LocalFileSystemStorage
 from platform_name.tables.base import BaseProcessor
@@ -86,7 +86,7 @@ class MarketPricesHistoricalProcessor(BaseProcessor):
         )
 
     def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-        validate_dataset_contract(data, MARKET_PRICES_CONTRACT)
+        validate_dataset_contract(data, CONTRACT)
         return data
 
     def write(self, data: pd.DataFrame) -> None:

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from platform_name.contracts.definitions import SECURITY_MASTER_CONTRACT
+from platform_name.tables.silver.security_master.contract import CONTRACT
 from platform_name.quality.framework import validate_dataset_contract
 from platform_name.storage.local import LocalFileSystemStorage
 from platform_name.tables.base import BaseProcessor
@@ -37,7 +37,7 @@ class SecurityMasterProcessor(BaseProcessor):
         return security_master
 
     def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-        validate_dataset_contract(data, SECURITY_MASTER_CONTRACT)
+        validate_dataset_contract(data, CONTRACT)
         return data
 
     def write(self, data: pd.DataFrame) -> None:

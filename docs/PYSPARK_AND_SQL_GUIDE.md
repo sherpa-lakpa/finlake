@@ -38,11 +38,11 @@ tables need a `sql_engine` — **which backend that is comes from
 environment configuration, not the table**:
 
 ```yaml
-# src/platform_name/configs/environments/dev.yaml
+# src/platform_name/configs/environments/local.yaml
 sql_backend: duckdb    # embedded, no cluster, fastest local iteration
 
-# src/platform_name/configs/environments/test.yaml and prod.yaml
-sql_backend: spark      # Databricks cluster session in production
+# src/platform_name/configs/environments/dev.yaml, test.yaml, prod.yaml
+sql_backend: spark      # Databricks cluster session in the cloud
 ```
 
 A `gold.top_movers`-style table's `query.sql` and `processor.py` never
@@ -177,10 +177,10 @@ docker compose build
 docker compose run --rm dev python scripts/local_dev_pipeline.py
 ```
 
-That script runs the *entire* mixed pipeline against `dev.yaml`: the
+That script runs the *entire* mixed pipeline against `local.yaml`: the
 Pandas chain through `gold.performance_summary`, the PySpark
 `gold.customer_risk` table (via a real local `SparkSession`), and the SQL
-`gold.top_movers` table (via DuckDB, per `dev.yaml`'s `sql_backend:
+`gold.top_movers` table (via DuckDB, per `local.yaml`'s `sql_backend:
 duckdb`) — all sharing one `TableRunner` context, so `gold.returns`
 computes once and both downstream tables reuse it, exactly like a single
 Databricks job run.

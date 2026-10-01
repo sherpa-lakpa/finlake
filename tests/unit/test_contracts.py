@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from platform_name.contracts.base import ColumnContract, DatasetContract
-from platform_name.contracts.definitions import SECURITY_MASTER_CONTRACT
+from platform_name.tables.silver.security_master.contract import CONTRACT as SECURITY_MASTER_CONTRACT
 from platform_name.common.exceptions import DataQualityError
 from platform_name.quality.framework import validate_dataset, validate_dataset_contract
 
@@ -40,6 +40,7 @@ def test_duplicate_business_key_fails():
             "security_id": ["AAA", "AAA"],
             "ticker": ["AAA", "AAA"],
             "asset_class": ["EQUITY", "EQUITY"],
+            "exchange": ["NASDAQ", "NASDAQ"],
         }
     )
     with pytest.raises(DataQualityError):
@@ -52,6 +53,7 @@ def test_null_in_non_nullable_column_fails():
             "security_id": ["AAA", None],
             "ticker": ["AAA", "BBB"],
             "asset_class": ["EQUITY", "EQUITY"],
+            "exchange": ["NASDAQ", "NASDAQ"],
         }
     )
     result = validate_dataset(df, SECURITY_MASTER_CONTRACT)

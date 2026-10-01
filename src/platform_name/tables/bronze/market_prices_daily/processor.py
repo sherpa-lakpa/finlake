@@ -27,7 +27,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from platform_name.contracts.definitions import MARKET_PRICES_CONTRACT
+from platform_name.tables.bronze.market_prices_daily.contract import CONTRACT
 from platform_name.quality.framework import validate_dataset_contract
 from platform_name.storage.local import LocalFileSystemStorage
 from platform_name.tables.base import BaseProcessor
@@ -148,7 +148,7 @@ class MarketPricesDailyProcessor(BaseProcessor):
         return combined.sort_values(["trade_date", "ticker"]).reset_index(drop=True)
 
     def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-        validate_dataset_contract(data, MARKET_PRICES_CONTRACT)
+        validate_dataset_contract(data, CONTRACT)
         return data
 
     def write(self, data: pd.DataFrame) -> None:

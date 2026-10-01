@@ -114,7 +114,7 @@ inferring one from the other.
 ## 3. A guided tour of the repository
 
 ```
-src/platform_name/configs/environments/{dev,test,prod}.yaml  # WHERE data lives per environment
+src/platform_name/configs/environments/{local,dev,test,prod}.yaml  # WHERE data lives per environment
 src/platform_name/
     common/
         config.py          # loads + validates one environment YAML
@@ -130,20 +130,27 @@ src/platform_name/
         runner.py           # TableRunner: orchestrates a full run
         validation.py       # ArchitectureValidator: fail-fast pre-flight checks
     contracts/
-        base.py             # DatasetContract / ColumnContract model
-        definitions.py      # concrete contracts for the example domain
+        base.py             # DatasetContract / ColumnContract model ONLY -- no
+                             # table-specific contracts live here (see below)
     quality/
         framework.py        # validate_dataset_contract(df, CONTRACT)
     storage/
         base.py             # StorageAdapter interface
         local.py             # local filesystem implementation
+    sql/                     # DuckDB/Spark-swappable SQL engine (execution.mode: sql)
     tables/
         base.py              # BaseProcessor (read/transform/validate/write/run)
-        bronze/market_prices/{metadata.yaml, processor.py}
-        silver/security_master/{metadata.yaml, processor.py}
-        silver/daily_prices/{metadata.yaml, processor.py}
-        gold/returns/{metadata.yaml, processor.py}
-        gold/performance_summary/{metadata.yaml, processor.py}
+        pyspark_base.py       # BasePySparkProcessor (execution.mode: pyspark)
+        sql_base.py           # BaseSqlProcessor (execution.mode: sql)
+        bronze/market_prices_historical/{metadata.yaml, processor.py, contract.py}
+        bronze/market_prices_daily/{metadata.yaml, processor.py, contract.py}
+        bronze/exchange_listings/{metadata.yaml, processor.py, contract.py}
+        silver/security_master/{metadata.yaml, processor.py, contract.py}
+        silver/daily_prices/{metadata.yaml, processor.py, contract.py}
+        gold/returns/{metadata.yaml, processor.py, contract.py}
+        gold/performance_summary/{metadata.yaml, processor.py, contract.py}
+        gold/customer_risk/{metadata.yaml, processor.py, contract.py}
+        gold/top_movers/{metadata.yaml, processor.py, contract.py, query.sql}
 tests/
     unit/           # one file per engine component, no I/O beyond tmp_path
     processors/     # each example processor tested in isolation
@@ -152,12 +159,13 @@ tests/
 data/{landing,bronze,silver,gold}/  # local dev data (landing/ has sample CSV)
 ```
 
-Notice `metadata.yaml` sits **right next to `processor.py`**, one directory
-per table (`tables/<layer>/<table>/`). This is deliberate: a new engineer
-adding a table only ever needs to look in one place, not hunt between a
-separate top-level `metadata/` tree and a parallel `tables/` tree that used
-to be kept in sync by convention alone. The directory structure itself is
-now part of the validation — `tables/<layer>/<table>/metadata.yaml`'s
+Notice `metadata.yaml`, `processor.py`, and `contract.py` all sit **in the
+same directory**, one per table (`tables/<layer>/<table>/`). This is
+deliberate: a new engineer adding a table only ever needs to look in one
+place, not hunt between separate top-level `metadata/`/`contracts/` trees
+and a parallel `tables/` tree that used to be kept in sync by convention
+alone. The directory structure itself is now part of the validation —
+`tables/<layer>/<table>/metadata.yaml`'s
 `name:` and `layer:` fields must match their own directory and parent
 directory names, which is exactly the kind of copy-paste mistake ("I
 duplicated an existing table's folder and forgot to rename the `name:`
@@ -165,10 +173,11 @@ field inside it") this catches automatically.
 
 A useful way to think about this tree: **everything under `engine/` is
 "the framework"** — code you should rarely need to touch. **Everything
-under `tables/` and `contracts/definitions.py`** is "the example domain" —
-code that grows every time someone adds a table, and which you *will*
-touch constantly. The whole point of the architecture is to keep that
-second category from ever requiring changes to the first.
+under `tables/`** (each table's `metadata.yaml`, `processor.py`, and
+`contract.py`) is "the example domain" — code that grows every time
+someone adds a table, and which you *will* touch constantly. The whole
+point of the architecture is to keep that second category from ever
+requiring changes to the first.
 
 ## 4. How a single table run actually works, end to end
 
@@ -179,7 +188,7 @@ from platform_name.common.config import Config
 from platform_name.engine.models import ExecutionContext
 from platform_name.engine.runner import TableRunner
 
-config = Config.for_environment("dev")
+config = Config.for_environment("local")
 context = ExecutionContext(config=config)
 runner = TableRunner()
 
@@ -418,15 +427,31 @@ It returns a `ValidationReport` with every error found (not just the
 first), so a broken metadata change gets one comprehensive error report
 instead of a whack-a-mole debugging session.
 
-### `contracts/base.py` and `contracts/definitions.py`
+### `contracts/base.py` and each table's `contract.py`
 
 `DatasetContract` is a generic, reusable shape: columns (with expected
 dtype/nullability/uniqueness), required columns, business keys, and a
-minimum row count. `contracts/definitions.py` then declares the concrete
-contracts for *this* domain (`SECURITY_MASTER_CONTRACT`,
-`DAILY_PRICES_CONTRACT`, etc.) — this file is explicitly **not** part of
-the generic framework; a new business domain would add its own contracts
-file rather than editing this one.
+minimum row count — that generic model lives in `contracts/base.py`, and
+contains no business-specific contracts itself.
+
+Each table then declares its *own* concrete `DatasetContract` in a
+`contract.py` file living right next to its `processor.py` and
+`metadata.yaml` — e.g. `tables/silver/security_master/contract.py` exports
+a single `CONTRACT` constant. This used to be one shared
+`contracts/definitions.py` file holding every table's contract; that
+worked fine at 6 tables and would have become the single messiest file in
+the repo at 100. Co-locating it per table means adding table #500 touches
+exactly one new folder, the same as adding table #5 — see
+`tests/architecture/test_table_folder_convention.py`, which enforces that
+every table folder has a `processor.py` **and** a `contract.py`, and that
+no central `contracts/definitions.py` creeps back in.
+
+The one exception: two tables that produce byte-for-byte the same schema
+by design (`bronze.market_prices_historical` and
+`bronze.market_prices_daily` both feed the same downstream union) share
+one contract rather than risking two copies quietly drifting apart —
+`market_prices_daily/contract.py` simply re-exports
+`market_prices_historical`'s `CONTRACT`, with a comment explaining why.
 
 ### `quality/framework.py`
 
@@ -553,7 +578,44 @@ paths:
 processor_config: {}
 ```
 
-**Step 3 — run it.**
+> This walkthrough is a deliberately simple, illustrative example — the
+> real `gold.customer_risk` table shipped in this repo is more advanced
+> (it actually uses PySpark; see [the PySpark/SQL guide](PYSPARK_AND_SQL_GUIDE.md)).
+> The steps below apply exactly the same way regardless — only the
+> execution mode differs.
+
+**File 3 — `contract.py`.**
+
+Every table declares its own `DatasetContract` here, exporting a single
+`CONTRACT` constant — no shared, central contracts file to add an entry
+to:
+
+```python
+from platform_name.contracts.base import ColumnContract, DatasetContract
+
+CONTRACT = DatasetContract(
+    name="customer_risk",
+    columns={
+        "security_id": ColumnContract(dtype="object", nullable=False, unique=True),
+        "risk_score": ColumnContract(dtype="float64", nullable=True),
+    },
+    business_keys=("security_id",),
+    min_row_count=0,
+)
+```
+
+Then call it from the processor's `validate()` step:
+
+```python
+from platform_name.tables.gold.customer_risk.contract import CONTRACT
+from platform_name.quality.framework import validate_dataset_contract
+
+def validate(self, data):
+    validate_dataset_contract(data, CONTRACT)
+    return data
+```
+
+**Step 4 — run it.**
 
 ```python
 result = runner.run(table_name="gold.customer_risk", context=context)
@@ -567,7 +629,7 @@ this framework is designed to pass — see
 `tests/architecture/test_no_hardcoding.py::test_adding_a_new_table_requires_no_generic_engine_changes`
 for an automated version of exactly this exercise.
 
-**Step 4 — write tests.** At minimum: a `tests/processors/test_customer_risk_processor.py`
+**Step 5 — write tests.** At minimum: a `tests/processors/test_customer_risk_processor.py`
 that constructs the processor directly with `tmp_path` fixtures (see the
 existing processor tests for the pattern). You don't need to add a new
 metadata-validity test for this specific file —
@@ -586,15 +648,16 @@ not three layers downstream in a gold table with a confusing error.
 
 ```python
 def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-    validate_dataset_contract(data, DAILY_PRICES_CONTRACT)
+    validate_dataset_contract(data, CONTRACT)
     return data
 ```
 
-If you add a new table, define its contract in
-`contracts/definitions.py` (or your own domain's equivalent file) and call
-`validate_dataset_contract` the same way. The check runs against category
-of dtype (string/datetime/integer/float/bool) rather than an exact pandas
-dtype string, so it's robust to differences between pandas versions.
+If you add a new table, define its contract in a `contract.py` file next
+to that table's `processor.py` and `metadata.yaml` (exporting a single
+`CONTRACT` constant), and call `validate_dataset_contract` the same way.
+The check runs against category of dtype (string/datetime/integer/float/
+bool) rather than an exact pandas dtype string, so it's robust to
+differences between pandas versions.
 
 ## 8. Testing philosophy
 
@@ -744,7 +807,7 @@ from platform_name.common.config import Config
 from platform_name.engine.models import ExecutionContext
 from platform_name.engine.runner import TableRunner
 
-config = Config.for_environment("dev")
+config = Config.for_environment("local")
 context = ExecutionContext(config=config)
 runner = TableRunner()
 result = runner.run(table_name="gold.returns", context=context)
@@ -757,7 +820,7 @@ from platform_name.common.config import Config
 from platform_name.engine.table_registry import TableRegistry
 from platform_name.engine.validation import ArchitectureValidator
 
-config = Config.for_environment("dev")
+config = Config.for_environment("local")
 registry = TableRegistry("src/platform_name/tables").load()  # or omit the root; TableRunner defaults here too
 report = ArchitectureValidator(registry, config).validate()
 assert report.is_valid, report.errors
@@ -768,6 +831,7 @@ assert report.is_valid, report.errors
 ```
 src/platform_name/tables/<layer>/<table>/metadata.yaml
 src/platform_name/tables/<layer>/<table>/processor.py
+src/platform_name/tables/<layer>/<table>/contract.py
 ```
 
 If you ever think you need to touch anything under `src/platform_name/

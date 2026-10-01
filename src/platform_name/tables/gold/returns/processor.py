@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from platform_name.contracts.definitions import RETURNS_CONTRACT
+from platform_name.tables.gold.returns.contract import CONTRACT
 from platform_name.quality.framework import validate_dataset_contract
 from platform_name.storage.local import LocalFileSystemStorage
 from platform_name.tables.base import BaseProcessor
@@ -34,7 +34,7 @@ class GoldReturnsProcessor(BaseProcessor):
         return ordered[["trade_date", "security_id", "daily_return"]].reset_index(drop=True)
 
     def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-        validate_dataset_contract(data, RETURNS_CONTRACT)
+        validate_dataset_contract(data, CONTRACT)
         return data
 
     def write(self, data: pd.DataFrame) -> None:

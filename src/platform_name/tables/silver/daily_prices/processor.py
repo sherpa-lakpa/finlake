@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from platform_name.contracts.definitions import DAILY_PRICES_CONTRACT
+from platform_name.tables.silver.daily_prices.contract import CONTRACT
 from platform_name.quality.framework import validate_dataset_contract
 from platform_name.storage.local import LocalFileSystemStorage
 from platform_name.tables.base import BaseProcessor
@@ -47,7 +47,7 @@ class DailyPricesProcessor(BaseProcessor):
         return merged[columns].sort_values(["security_id", "trade_date"]).reset_index(drop=True)
 
     def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-        validate_dataset_contract(data, DAILY_PRICES_CONTRACT)
+        validate_dataset_contract(data, CONTRACT)
         return data
 
     def write(self, data: pd.DataFrame) -> None:

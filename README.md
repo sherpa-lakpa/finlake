@@ -38,7 +38,7 @@ from platform_name.common.config import Config
 from platform_name.engine.models import ExecutionContext
 from platform_name.engine.runner import TableRunner
 
-config = Config.for_environment("dev")
+config = Config.for_environment("local")
 context = ExecutionContext(config=config)
 runner = TableRunner()
 
@@ -208,14 +208,18 @@ config = Config.for_environment("dev")   # not Config("configs/environments/dev.
 `Config` exposes `landing`/`bronze`/`silver`/`gold` root paths plus
 arbitrary config. The same table metadata runs unchanged across
 environments — only the path roots differ, e.g. local `data/bronze` in
-dev vs. `abfss://...` in prod.
+`local.yaml` vs. `/Volumes/dev/market_data/bronze` in `dev.yaml`.
 
 ## 7. Data quality
 
 `DatasetContract` (columns, dtypes, nullability, uniqueness, business keys,
 min row count) + `validate_dataset_contract(df, CONTRACT)` are reusable by
-any processor at any layer. See `platform_name.contracts.definitions` for
-the example domain's contracts (`SECURITY_MASTER_CONTRACT`, etc.).
+any processor at any layer. Each table declares its own contract in a
+`contract.py` file next to its `processor.py` and `metadata.yaml` — e.g.
+`tables/silver/security_master/contract.py` — rather than in one shared,
+ever-growing file. `contracts/base.py` holds only the generic
+`DatasetContract`/`ColumnContract` model; it has no table-specific
+contracts in it.
 
 ## 8. Local execution
 

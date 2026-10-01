@@ -1,0 +1,18 @@
+"""Dataset contract for gold.customer_risk.
+
+Didn't exist before this table's contract was co-located here -- adding it
+now that every table has its own contract.py is essentially free.
+"""
+from __future__ import annotations
+
+from platform_name.contracts.base import ColumnContract, DatasetContract
+
+CONTRACT = DatasetContract(
+    name="customer_risk",
+    columns={
+        "security_id": ColumnContract(dtype="object", nullable=False, unique=True),
+        "risk_score": ColumnContract(dtype="float64", nullable=True),
+    },
+    business_keys=("security_id",),
+    min_row_count=0,
+)

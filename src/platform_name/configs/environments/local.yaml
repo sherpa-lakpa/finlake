@@ -1,0 +1,20 @@
+# Pure local development: everything on local disk, no cloud dependency at
+# all. This is what you run on a laptop -- see docs/PYSPARK_AND_SQL_GUIDE.md
+# and scripts/local_dev_pipeline.py.
+environment: local
+
+paths:
+  landing: data/landing
+  bronze: data/bronze
+  silver: data/silver
+  gold: data/gold
+
+market_data:
+  source: historical
+
+# execution.mode: sql tables run against DuckDB here -- an embedded engine
+# with zero JVM/cluster dependency, so `pip install duckdb` is enough to
+# run every SQL-mode table locally.
+# execution.mode: pyspark tables still need a real (local[*]) SparkSession,
+# built explicitly in your local dev script -- see the same guide.
+sql_backend: duckdb

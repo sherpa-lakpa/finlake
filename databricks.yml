@@ -25,6 +25,10 @@ variables:
     description: >
       Value passed to every generated task as --env, matching a file under
       src/platform_name/configs/environments/<environment>.yaml. Overridden per target below.
+      A fourth config, local.yaml, also exists for pure laptop development
+      (DuckDB, local filesystem paths) -- it is intentionally never used as
+      a bundle target here, since nothing under `targets:` deploys to a
+      laptop.
   alert_email:
     description: Distribution list notified on task failure.
     default: data-platform-alerts@example.com

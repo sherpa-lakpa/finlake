@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from platform_name.contracts.definitions import PERFORMANCE_SUMMARY_CONTRACT
+from platform_name.tables.gold.performance_summary.contract import CONTRACT
 from platform_name.quality.framework import validate_dataset_contract
 from platform_name.storage.local import LocalFileSystemStorage
 from platform_name.tables.base import BaseProcessor
@@ -31,7 +31,7 @@ class PerformanceSummaryProcessor(BaseProcessor):
         return summary
 
     def validate(self, data: pd.DataFrame) -> pd.DataFrame:
-        validate_dataset_contract(data, PERFORMANCE_SUMMARY_CONTRACT)
+        validate_dataset_contract(data, CONTRACT)
         return data
 
     def write(self, data: pd.DataFrame) -> None:

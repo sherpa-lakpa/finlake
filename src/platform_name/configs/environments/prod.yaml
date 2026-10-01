@@ -1,18 +1,41 @@
+# Cloud environment: runs on an actual Databricks cluster/job, backed by
+# real ADLS Gen2 storage.
+#
+# Paths use Unity Catalog Volumes (/Volumes/<catalog>/<schema>/<volume>/...)
+# -- Databricks' current recommendation for file access on ADLS, replacing
+# the now-deprecated DBFS mounts. The genuinely useful property: this exact
+# POSIX-style path is read natively by BOTH plain pandas (pd.read_csv,
+# pd.read_parquet -- i.e. every pandas-mode table's LocalFileSystemStorage,
+# completely unchanged) AND Spark (spark.read.format(...).load(...)), so
+# every table works against real cloud storage with zero code changes,
+# regardless of execution mode.
+#
+# Set these up once per environment:
+#   CREATE CATALOG IF NOT EXISTS prod;
+#   CREATE SCHEMA IF NOT EXISTS prod.market_data;
+#   CREATE EXTERNAL VOLUME prod.market_data.landing
+#     LOCATION 'abfss://landing@<storage-account>.dfs.core.windows.net/';
+#   -- (repeat CREATE EXTERNAL VOLUME for bronze / silver / gold, each
+#   -- pointed at its own container or prefix)
+#
+# If a table's execution.mode: pyspark or execution.mode: sql (sql_backend:
+# spark) processor specifically needs a raw Spark-native URI instead (e.g.
+# to use Delta features tied to an external location rather than a
+# volume), abfss://<container>@<storage-account>.dfs.core.windows.net/<path>
+# is the direct equivalent -- but Volumes are the default here because they
+# also work for every pandas-mode table without any extra code.
 environment: prod
 
-# In production these would point at ADLS Gen2 / Unity Catalog locations, e.g.:
-#   bronze: abfss://bronze@myaccount.dfs.core.windows.net/tables
-# Kept as local paths here so the repository remains runnable out of the box.
 paths:
-  landing: data/landing
-  bronze: data/bronze
-  silver: data/silver
-  gold: data/gold
+  landing: /Volumes/prod/market_data/landing
+  bronze: /Volumes/prod/market_data/bronze
+  silver: /Volumes/prod/market_data/silver
+  gold: /Volumes/prod/market_data/gold
 
 market_data:
   source: historical
 
 # execution.mode: sql AND execution.mode: pyspark tables both require a
 # real Spark session here -- always the Databricks cluster's session in
-# production (never local[*]); see entrypoints/run_single_table.py.
+# prod (never local[*]); see entrypoints/run_single_table.py.
 sql_backend: spark

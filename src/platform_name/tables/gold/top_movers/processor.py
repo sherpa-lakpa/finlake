@@ -11,6 +11,13 @@ from __future__ import annotations
 
 from platform_name.tables.sql_base import BaseSqlProcessor
 
+# See contract.py in this same directory for this table's DatasetContract.
+# Not wired in here: BaseSqlProcessor's result is a DuckDBPyRelation or a
+# Spark DataFrame depending on sql_backend, and quality/framework.py's
+# validate_dataset_contract is pandas-specific -- it would fail against
+# either. The contract documents the expected shape and is ready for a
+# backend-aware validator once one exists.
+
 
 class TopMoversProcessor(BaseSqlProcessor):
     sql_file = "query.sql"

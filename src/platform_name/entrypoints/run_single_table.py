@@ -174,24 +174,5 @@ def main(argv: list[str] | None = None) -> None:
         print(f"SUCCESS: {result.to_dict()}")
 
 
-def test():
-    from pathlib import Path
-    import platform_name
-
-    print("platform_name:", platform_name.__file__)
-
-    config = (
-        Path(platform_name.__file__).resolve().parent
-        / "configs"
-        / "environments"
-        / "dev.yaml"
-    )
-
-    print("config:", config)
-    print("exists:", config.exists())
-    print("is_file:", config.is_file())
-    print("readable:", config.read_text()[:200] if config.exists() else "NO")
-
 if __name__ == "__main__":
-    test()
     main()
