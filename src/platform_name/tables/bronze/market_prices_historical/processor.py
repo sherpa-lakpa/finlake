@@ -73,7 +73,12 @@ class MarketPricesHistoricalProcessor(BaseProcessor):
             frames.append(frame)
 
         combined = pd.concat(frames, ignore_index=True)
-        combined["trade_date"] = pd.to_datetime(combined["trade_date"])
+        # combined["trade_date"] = pd.to_datetime(combined["trade_date"])
+        combined["trade_date"] = (
+            pd.to_datetime(combined["trade_date"])
+            .astype("datetime64[us]")
+        )
+
         for price_column in ("open_price", "high_price", "low_price", "close_price", "adj_close"):
             combined[price_column] = combined[price_column].astype(float)
         combined["volume"] = combined["volume"].fillna(0).astype("int64")
