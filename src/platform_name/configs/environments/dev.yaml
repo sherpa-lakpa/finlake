@@ -27,10 +27,10 @@
 environment: dev
 
 paths:
-  landing: /Volumes/dev/market_data/landing
-  bronze: /Volumes/dev/market_data/bronze
-  silver: /Volumes/dev/market_data/silver
-  gold: /Volumes/dev/market_data/gold
+  landing: /Volumes/finlake_dev/market_data/landing
+  bronze: /Volumes/finlake_dev/market_data/bronze
+  silver: /Volumes/finlake_dev/market_data/silver
+  gold: /Volumes/finlake_dev/market_data/gold
 
 market_data:
   source: historical
